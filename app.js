@@ -30,12 +30,27 @@ const ytSearchUrl = (m) =>
   `https://www.youtube.com/results?search_query=` +
   encodeURIComponent(`${m.artist} ${m.venue} ${m.year} live`);
 
+// ---- persistence: your pins & loves survive reloads (localStorage only, nothing leaves the browser) ----
+const PINS_KEY = "encore.pins.v1";
+const LIKES_KEY = "encore.likes.v1";
+const readJSON = (key, fallback) => {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+};
+const likeBumps = readJSON(LIKES_KEY, {});
+
 // ---- state ----
-let moments = MOMENTS.slice();
+let moments = [...readJSON(PINS_KEY, []), ...MOMENTS.slice()];
+moments.forEach((m) => { if (!m.mine && likeBumps[m.id]) m.likes += likeBumps[m.id]; });
 let activeGenre = "all";
 let searchQuery = "";
 let pendingLatLng = null;        // for "pin a moment"
-const markers = new Map();        // id -> leaflet marker
+
+const savePins = () =>
+  localStorage.setItem(PINS_KEY, JSON.stringify(moments.filter((m) => m.mine)));
+const saveLikes = () => localStorage.setItem(LIKES_KEY, JSON.stringify(likeBumps));
+
+const esc = (s) => String(s).replace(/[&<>"']/g,
+  (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 // ---- map ----
 const map = L.map("map", { zoomControl: false, attributionControl: true })
@@ -52,19 +67,29 @@ function makePinIcon(m) {
   const html = `
     <div class="pin">
       <div class="pin-ring"></div>
-      <img class="pin-thumb" src="${thumbFor(m)}" ${THUMB_ATTRS} alt="${m.artist}" />
+      <img class="pin-thumb" src="${thumbFor(m)}" ${THUMB_ATTRS} alt="${esc(m.artist)}" />
     </div>`;
   return L.divIcon({ className: "", html, iconSize: [40, 40], iconAnchor: [20, 20] });
 }
 
+// cluster nearby pins at low zoom (plain group fallback if the plugin CDN is unreachable)
+const pinLayer = (L.markerClusterGroup
+  ? L.markerClusterGroup({
+      maxClusterRadius: 44, showCoverageOnHover: false,
+      iconCreateFunction: (c) => L.divIcon({
+        className: "",
+        html: `<div class="cluster">${c.getChildCount()}</div>`,
+        iconSize: [44, 44], iconAnchor: [22, 22]
+      })
+    })
+  : L.layerGroup()).addTo(map);
+
 function renderMarkers() {
-  markers.forEach((mk) => map.removeLayer(mk));
-  markers.clear();
+  pinLayer.clearLayers();
   visibleMoments().forEach((m) => {
-    const mk = L.marker([m.lat, m.lng], { icon: makePinIcon(m) })
-      .addTo(map)
-      .on("click", () => openMoment(m));
-    markers.set(m.id, mk);
+    pinLayer.addLayer(
+      L.marker([m.lat, m.lng], { icon: makePinIcon(m) }).on("click", () => openMoment(m))
+    );
   });
 }
 
@@ -92,16 +117,17 @@ function renderFeed() {
     card.className = "card";
     card.innerHTML = `
       <span class="card-play">▶</span>
-      <img class="card-thumb" src="${thumbFor(m)}" ${THUMB_ATTRS} alt="${m.artist}" />
+      <img class="card-thumb" src="${thumbFor(m)}" ${THUMB_ATTRS} alt="${esc(m.artist)}" />
       <div class="card-body">
-        <div class="card-artist">${m.artist}</div>
-        <div class="card-meta">${m.venue} · ${m.city} · ${m.year}</div>
+        <div class="card-artist">${esc(m.artist)}</div>
+        <div class="card-meta">${esc(m.venue)} · ${esc(m.city)} · ${esc(m.year)}</div>
         <div class="card-foot">
-          <span class="card-genre">${m.genre}</span>
+          <span class="card-genre">${esc(m.genre)}</span>
           <span class="card-likes">♥ ${m.likes.toLocaleString()}</span>
         </div>
       </div>`;
     card.addEventListener("click", () => {
+      document.body.classList.remove("feed-open");
       map.flyTo([m.lat, m.lng], 12, { duration: 1.1 });
       openMoment(m);
     });
@@ -133,7 +159,7 @@ function openMoment(m) {
   document.getElementById("modalArtist").textContent = m.artist;
   document.getElementById("modalMeta").textContent = `${m.venue} · ${m.city} · ${m.year}`;
   document.getElementById("modalStory").textContent = m.story;
-  document.getElementById("modalTags").innerHTML = `<span class="card-genre">${m.genre}</span>`;
+  document.getElementById("modalTags").innerHTML = `<span class="card-genre">${esc(m.genre)}</span>`;
   document.getElementById("saveCount").textContent = m.likes.toLocaleString();
 
   const v = document.getElementById("modalVideo");
@@ -142,14 +168,18 @@ function openMoment(m) {
          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
          allowfullscreen></iframe>`;
   } else {
-    v.innerHTML = `<button class="video-fallback" type="button"
-         onclick="window.open('${ytSearchUrl(m)}','_blank')">
-         <span class="vf-play">▶</span>
+    const b = document.createElement("button");
+    b.className = "video-fallback";
+    b.type = "button";
+    b.innerHTML = `<span class="vf-play">▶</span>
          <span class="vf-main">watch fan clips on YouTube</span>
-         <small>no clip pinned yet — be the first to add one</small>
-       </button>`;
+         <small>no clip pinned yet — be the first to add one</small>`;
+    b.addEventListener("click", () => window.open(ytSearchUrl(m), "_blank"));
+    v.innerHTML = "";
+    v.appendChild(b);
   }
 
+  history.replaceState(null, "", shareUrlFor(m));
   document.getElementById("modal").hidden = false;
 }
 document.getElementById("modalClose").onclick = closeModal;
@@ -159,12 +189,18 @@ document.getElementById("modal").addEventListener("click", (e) => {
 function closeModal() {
   document.getElementById("modalVideo").innerHTML = ""; // stop playback
   document.getElementById("modal").hidden = true;
+  history.replaceState(null, "", location.pathname + location.search);
 }
 document.getElementById("modalYt").onclick = () =>
   window.open(currentMoment ? ytSearchUrl(currentMoment) : "https://youtube.com", "_blank");
 document.getElementById("modalSave").onclick = () => {
   if (!currentMoment) return;
   currentMoment.likes += 1;
+  if (currentMoment.mine) savePins();
+  else if (moments.includes(currentMoment)) {
+    likeBumps[currentMoment.id] = (likeBumps[currentMoment.id] || 0) + 1;
+    saveLikes();
+  }
   document.getElementById("saveCount").textContent = currentMoment.likes.toLocaleString();
   renderFeed();
 };
@@ -211,7 +247,9 @@ document.getElementById("addForm").addEventListener("submit", (e) => {
     likes: 1
   };
   m.videoOk = !!m.youtubeId; // trust a freshly pasted link
+  m.mine = true;
   moments.unshift(m);
+  savePins();
   f.reset();
   pendingLatLng = null;
   sheetHint.textContent = "tip: click anywhere on the map first to set the location 📍";
@@ -358,6 +396,66 @@ document.getElementById("spotifyModal").addEventListener("click", (e) => {
 });
 document.getElementById("soundClose").addEventListener("click", disconnectSpotify);
 
+// ============ share & deep links ============
+// seed moments share as #m=<id>; your own pins are encoded into the link itself
+// (base64url JSON) so the person you send it to sees the exact moment — no backend.
+function encodeMoment(m) {
+  const p = {
+    a: m.artist, v: m.venue, c: m.city, y: m.year, g: m.genre,
+    la: +m.lat.toFixed(4), ln: +m.lng.toFixed(4),
+    yt: m.youtubeId || undefined, s: m.story
+  };
+  return btoa(unescape(encodeURIComponent(JSON.stringify(p))))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodeMoment(str) {
+  try {
+    const p = JSON.parse(decodeURIComponent(escape(atob(str.replace(/-/g, "+").replace(/_/g, "/")))));
+    if (!p.a || typeof p.la !== "number" || typeof p.ln !== "number") return null;
+    const yt = typeof p.yt === "string" && /^[\w-]{11}$/.test(p.yt) ? p.yt : null;
+    return {
+      id: "shared", artist: String(p.a), venue: String(p.v || ""), city: String(p.c || ""),
+      year: p.y || "", genre: String(p.g || "other"), lat: p.la, lng: p.ln,
+      youtubeId: yt, videoOk: !!yt, story: String(p.s || ""), likes: 1
+    };
+  } catch { return null; }
+}
+
+function shareUrlFor(m) {
+  const base = location.origin + location.pathname;
+  return MOMENTS.some((s) => s.id === m.id) ? `${base}#m=${m.id}` : `${base}#p=${encodeMoment(m)}`;
+}
+
+document.getElementById("modalShare").onclick = async () => {
+  if (!currentMoment) return;
+  const url = shareUrlFor(currentMoment);
+  const btn = document.getElementById("modalShare");
+  try {
+    if (navigator.share) { await navigator.share({ title: `${currentMoment.artist} — ENCORE`, url }); return; }
+    await navigator.clipboard.writeText(url);
+    btn.textContent = "✓ link copied";
+    setTimeout(() => { btn.textContent = "⤴ share"; }, 1600);
+  } catch { /* user dismissed the share sheet */ }
+};
+
+// opening a shared link skips the intro and lands on the moment
+function openFromHash() {
+  const mMatch = location.hash.match(/^#m=(\d+)$/);
+  const pMatch = location.hash.match(/^#p=([\w-]+)$/);
+  let target = null;
+  if (mMatch) target = moments.find((x) => String(x.id) === mMatch[1]) || null;
+  else if (pMatch) target = decodeMoment(pMatch[1]);
+  if (!target) return;
+  endSplash();
+  map.setView([target.lat, target.lng], 12);
+  setTimeout(() => openMoment(target), 300);
+}
+
+// ---- mobile feed toggle ----
+document.getElementById("feedToggle").addEventListener("click", () =>
+  document.body.classList.toggle("feed-open"));
+
 // ---- probe which seed videos actually resolve (avoids dead embeds) ----
 function probeVideos() {
   moments.forEach((m) => {
@@ -375,3 +473,4 @@ probeVideos();
 renderChips();
 renderFeed();
 renderMarkers();
+openFromHash();

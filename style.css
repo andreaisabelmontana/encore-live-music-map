@@ -224,6 +224,20 @@ body {
   border: 2px solid #fff; z-index: 3; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,.6);
 }
 
+/* ---------- cluster bubbles ---------- */
+.cluster {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--card); backdrop-filter: var(--blur);
+  border: 2px solid var(--accent); color: var(--ink);
+  font-weight: 700; font-size: 14px;
+  box-shadow: 0 4px 18px rgba(255,46,154,.35);
+}
+.leaflet-cluster-anim .leaflet-marker-icon { transition: transform .3s ease-out; }
+
+/* ---------- mobile feed toggle (hidden on desktop) ---------- */
+.feed-toggle { display: none; }
+
 /* ---------- FAB ---------- */
 .fab {
   position: fixed; bottom: 24px; right: 24px; z-index: 950;
@@ -387,4 +401,18 @@ body.sound-on .feed { display: none; }
   .spotify-btn { padding: 9px; font-size: 0; gap: 0; }
   .spotify-btn .sp-logo { font-size: 18px; }
   .search { flex: 1; }
+
+  /* feed becomes a toggleable bottom sheet instead of disappearing */
+  .feed-toggle {
+    position: fixed; bottom: 24px; left: 24px; z-index: 951;
+    display: flex; align-items: center; gap: 6px;
+    padding: 14px 18px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--stroke); background: var(--card); backdrop-filter: var(--blur);
+    color: var(--ink); font: inherit; font-weight: 600; font-size: 14px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.4);
+  }
+  body.feed-open .feed {
+    display: flex; top: auto; left: 12px; right: 12px; bottom: 88px;
+    width: auto; max-height: 55vh; z-index: 940;
+  }
 }

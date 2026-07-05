@@ -2,13 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ENCORE · the map of live music memory</title>
   <meta name="description" content="Pin the shows that mattered. Relive the ones you missed. A map of live music memory." />
+  <meta property="og:title" content="ENCORE · the map of live music memory" />
+  <meta property="og:description" content="Pin the shows that mattered. Relive the ones you missed." />
+  <meta property="og:type" content="website" />
+  <meta name="theme-color" content="#0a0a0f" />
 
-  <!-- Leaflet -->
+  <!-- Leaflet + marker clustering -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -94,6 +99,9 @@
     </div>
   </div>
 
+  <!-- ===== Mobile feed toggle ===== -->
+  <button class="feed-toggle" id="feedToggle">▤ feed</button>
+
   <!-- ===== Add-a-moment FAB ===== -->
   <button class="fab" id="addBtn">
     <span>＋</span> pin a moment
@@ -111,6 +119,7 @@
         <blockquote class="modal-story" id="modalStory"></blockquote>
         <div class="modal-actions">
           <button class="btn-ghost" id="modalYt">↗ open on youtube</button>
+          <button class="btn-ghost" id="modalShare">⤴ share</button>
           <button class="btn-save" id="modalSave">♥ <span id="saveCount"></span></button>
         </div>
       </div>

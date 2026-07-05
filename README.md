@@ -15,9 +15,14 @@ This is a working front-end prototype.
 - **Explore a dark, vector world map** of live-music moments (Leaflet + CARTO tiles — no API key).
 - **Tap a pin** to open a moment: an embedded performance video + the story of *why it mattered*.
 - **Browse the feed** — a Pinterest-style rail of recently-pinned moments, sorted by love.
-- **Filter by genre**, search by artist / city / venue.
+  On mobile it's a toggleable bottom sheet.
+- **Filter by genre**, search by artist / city / venue. Nearby pins **cluster** at low zoom.
 - **Pin your own moment** — click the map to drop a location, paste a YouTube link
-  (we **embed**, never re-host), and add the story.
+  (we **embed**, never re-host), and add the story. Your pins and loves **persist**
+  across reloads (localStorage — nothing leaves your browser).
+- **Share any moment** — every moment has a link. Your own pins encode themselves
+  *into* the URL (base64), so a friend opens the exact pin with no backend at all.
+  Shared links skip the intro and land straight on the moment.
 - **Cassette → stage intro** splash to set the mood.
 
 ## 🟢 Connect Spotify — your Sound Map
@@ -91,7 +96,8 @@ The UI already renders from a plain array of moment objects, so this is a drop-i
 - [ ] Artist view: every show of an artist as a timeline + touring map + follow
 - [ ] User accounts + "boards" (Pinterest-style collections)
 - [ ] Gig-poster card aesthetic (duotone cut-outs, warped display type, sticker accents)
-- [ ] Cluster pins at low zoom; heatmap of "most-relived" venues
+- [x] Cluster pins at low zoom · shareable moment links · persistent pins
+- [ ] Heatmap of "most-relived" venues
 - [ ] Extend beyond music: festivals, sports, protests — any moment tied to a place
 
 ---
