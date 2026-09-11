@@ -100,10 +100,13 @@
   <!-- ===== Left rail: feed of moments ===== -->
   <aside class="feed" id="feed" aria-labelledby="feedTitle">
     <div class="feed-head">
-      <h2 id="feedTitle">recently pinned</h2>
-      <span class="feed-count" id="feedCount">0</span>
+      <div class="feed-head-top">
+        <h2 id="feedTitle">on the map</h2>
+        <span class="feed-count" id="feedCount">0</span>
+      </div>
+      <div class="feed-sort" id="feedSort" role="group" aria-label="order the list"></div>
     </div>
-    <p class="visually-hidden" id="feedStatus" role="status" aria-live="polite"></p>
+    <p class="feed-sub" id="feedStatus" role="status" aria-live="polite"></p>
     <div class="feed-list" id="feedList"></div>
   </aside>
 

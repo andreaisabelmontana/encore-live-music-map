@@ -8,7 +8,9 @@ import {
   genresOf,
   matchesQuery,
   normalize,
-  sortByLove
+  sortByDistanceFrom,
+  sortByLove,
+  sortByRecency
 } from "../src/core/moments.js";
 
 /**
@@ -115,4 +117,41 @@ test("distanceKm measures a known pair within a kilometre", () => {
   const barcelona = { lat: 41.3874, lng: 2.1686 };
   assert.ok(Math.abs(distanceKm(madrid, barcelona) - 505) < 5);
   assert.equal(distanceKm(madrid, madrid), 0);
+});
+
+test("sortByRecency puts the most recent night first", () => {
+  const ranked = sortByRecency([
+    moment({ id: 1, year: 2006 }),
+    moment({ id: 2, year: 2023 }),
+    moment({ id: 3, year: 2017 })
+  ]);
+  assert.deepEqual(ranked.map((m) => m.year), [2023, 2017, 2006]);
+});
+
+test("two moments from the same year break the tie on identity", () => {
+  const ranked = sortByRecency([
+    moment({ id: 1, year: 2023 }),
+    moment({ id: 1735689600000, year: 2023, mine: true })
+  ]);
+  assert.equal(ranked[0].mine, true, "a moment you pinned sorts above a seed from the same year");
+});
+
+test("sortByDistanceFrom orders by how far away the night happened", () => {
+  const madrid = { lat: 40.4168, lng: -3.7038 };
+  const ranked = sortByDistanceFrom(
+    [
+      moment({ id: 1, lat: -34.6037, lng: -58.3816 }),
+      moment({ id: 2, lat: 41.3874, lng: 2.1686 }),
+      moment({ id: 3, lat: 51.5074, lng: -0.1278 })
+    ],
+    madrid
+  );
+  assert.deepEqual(ranked.map((m) => m.id), [2, 3, 1], "Barcelona, then London, then Buenos Aires");
+});
+
+test("neither ordering mutates what it was given", () => {
+  const input = [moment({ id: 1, year: 2006 }), moment({ id: 2, year: 2023 })];
+  sortByRecency(input);
+  sortByDistanceFrom(input, { lat: 0, lng: 0 });
+  assert.deepEqual(input.map((m) => m.id), [1, 2]);
 });

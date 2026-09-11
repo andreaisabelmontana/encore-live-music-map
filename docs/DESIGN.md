@@ -72,6 +72,25 @@ anything a person is reading.
 | Heart | One thump, restarted on every press | The only feedback that a count changed |
 | Ticker | A continuous run of dates along the bottom | A tour list, and it pauses on hover |
 
+## Saying what a thing is
+
+Two labels were lying, and both were found by someone reading the screen rather
+than the code.
+
+The rail was headed "recently pinned" while holding every moment on the map
+ordered by hearts. Nothing about it was recent, and nothing said what it was. It
+is now headed "on the map", the order is three buttons instead of an assumption,
+and the line underneath says which order is in force: "12 moments, most loved
+first". That line is the same element the screen reader is listening to, so the
+visible answer and the announced one cannot drift apart.
+
+The ticker along the bottom borrows the run of dates from a tour poster, which
+made it read as shows to buy tickets for. It now carries a fixed label saying
+"on the map" and runs in the same order as the rail, so it is visibly the list
+already on screen rather than a second unexplained one. Each entry leads with its
+year and a separator, because with the year trailing, one night's date sat
+against the next night's name.
+
 ## What the look is not allowed to cost
 
 - **Contrast.** Acid on near black and paper on near black both clear the

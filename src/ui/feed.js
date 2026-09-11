@@ -1,10 +1,15 @@
 /**
- * The rail of recently pinned moments.
+ * The rail: every moment currently on the map, as a list.
  *
- * The feed is not decoration, it is the keyboard and screen reader path through
- * the app. A Leaflet marker is a div on a canvas, effectively unreachable by
- * keyboard, so every moment on the map is also a real `<button>` in this list,
- * reachable by Tab and announced with its venue, city and year.
+ * It is not a separate feature from the map, it is the same set of moments in a
+ * second form, and that is the thing the interface has to make obvious. The
+ * heading says "on the map", the line under it says how many and in what order,
+ * and the order is a control rather than a mystery.
+ *
+ * It is also the keyboard and screen reader path through the app. A Leaflet
+ * marker is a div on a canvas, effectively unreachable by keyboard, so every pin
+ * is also a real `<button>` here, reachable by Tab and announced with its venue,
+ * city and year.
  *
  * @module ui/feed
  */
@@ -17,29 +22,69 @@ import { formatCount, formatMeta } from "../core/format.js";
  */
 
 /**
+ * The orders the rail can be read in, and how each one describes itself. The
+ * description is not decoration: a list whose order is not stated is a list a
+ * person has to reverse engineer.
+ *
+ * @type {Array<{ key: string, label: string, describe: (count: number) => string }>}
+ */
+export const SORTS = [
+  { key: "loved", label: "loved", describe: () => "most loved first" },
+  { key: "recent", label: "recent", describe: () => "most recent night first" },
+  { key: "near", label: "near", describe: () => "closest to the middle of the map first" }
+];
+
+/**
  * @param {object} elements
  * @param {HTMLElement} elements.list
  * @param {HTMLElement} elements.count
- * @param {HTMLElement} elements.status   Polite live region for result counts.
- * @param {(moment: Moment) => void} onSelect
+ * @param {HTMLElement} elements.status   Live region, and the visible sub line.
+ * @param {HTMLElement} elements.sort
+ * @param {object} handlers
+ * @param {(moment: Moment) => void} handlers.onSelect
+ * @param {(sort: string) => void} handlers.onSortChange
  */
-export function createFeed(elements, onSelect) {
+export function createFeed(elements, handlers) {
+  /** @type {Map<string, HTMLButtonElement>} */
+  const sortButtons = new Map();
+
+  for (const sort of SORTS) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "sort-btn";
+    button.textContent = sort.label;
+    button.addEventListener("click", () => handlers.onSortChange(sort.key));
+    sortButtons.set(sort.key, button);
+    elements.sort.append(button);
+  }
+
   /**
-   * @param {Moment[]} moments
+   * @param {Moment[]} moments Already in the order they should be read.
+   * @param {string} sortKey
    */
-  function render(moments) {
+  function render(moments, sortKey) {
+    const sort = SORTS.find((entry) => entry.key === sortKey) ?? SORTS[0];
+
+    for (const [key, button] of sortButtons) {
+      const active = key === sort.key;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    }
+
     elements.count.textContent = String(moments.length);
-    elements.list.replaceChildren(...moments.map((moment) => card(moment, onSelect)));
+    elements.list.replaceChildren(...moments.map((moment) => card(moment, handlers.onSelect)));
 
     if (moments.length === 0) {
       const empty = document.createElement("p");
       empty.className = "feed-empty";
       empty.textContent = "no moments match that search yet. try another artist, city or venue.";
       elements.list.replaceChildren(empty);
+      elements.status.textContent = "nothing on the map right now";
+      return;
     }
 
-    elements.status.textContent =
-      moments.length === 1 ? "1 moment on the map" : `${formatCount(moments.length)} moments on the map`;
+    const counted = moments.length === 1 ? "1 moment" : `${formatCount(moments.length)} moments`;
+    elements.status.textContent = `${counted}, ${sort.describe(moments.length)}`;
   }
 
   return { render };

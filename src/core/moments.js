@@ -69,6 +69,36 @@ export function sortByLove(moments) {
 }
 
 /**
+ * Newest night first. The tie break is the identifier, which for a moment
+ * someone pinned is the millisecond they pinned it, so their own additions sort
+ * above seed moments from the same year.
+ *
+ * @param {Moment[]} moments
+ * @returns {Moment[]}
+ */
+export function sortByRecency(moments) {
+  return [...moments].sort(
+    (a, b) => Number(b.year) - Number(a.year) || String(b.id).localeCompare(String(a.id))
+  );
+}
+
+/**
+ * Closest to a point first, which in the app is whatever the map is centred on.
+ * Panning therefore reorders the list, and that is the intent: the rail answers
+ * "what happened around here".
+ *
+ * @param {Moment[]} moments
+ * @param {{lat: number, lng: number}} origin
+ * @returns {Moment[]}
+ */
+export function sortByDistanceFrom(moments, origin) {
+  return [...moments]
+    .map((moment) => ({ moment, km: distanceKm(origin, moment) }))
+    .sort((a, b) => a.km - b.km)
+    .map((entry) => entry.moment);
+}
+
+/**
  * Genres present in the collection, in the order the UI should render chips.
  * Always starts with "all" so the filter bar has a reset.
  *

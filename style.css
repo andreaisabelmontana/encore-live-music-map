@@ -328,10 +328,10 @@ body {
   overflow: hidden;
 }
 .feed-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px 10px;
+  padding: 14px 16px 12px;
   border-bottom: 2px solid var(--stroke);
 }
+.feed-head-top { display: flex; align-items: center; justify-content: space-between; }
 .feed-head h2 {
   font-family: var(--display); text-transform: uppercase;
   font-size: 20px; letter-spacing: .02em; font-weight: 400;
@@ -341,6 +341,25 @@ body {
   padding: 3px 10px; border-radius: 999px;
   background: var(--acid); color: var(--ink);
   transform: rotate(3deg);
+}
+
+/* The order of the list is a control, not something to be inferred. */
+.feed-sort { display: flex; gap: 6px; margin-top: 10px; }
+.sort-btn {
+  flex: 1; padding: 5px 4px; cursor: pointer;
+  background: transparent; border: 2px solid var(--stroke); border-radius: 999px;
+  color: var(--muted); font: inherit; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .1em;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.sort-btn:hover { color: var(--paper); border-color: var(--paper-dim); }
+.sort-btn.active { background: var(--paper); border-color: var(--paper); color: var(--ink); }
+
+/* And the answer to "in what order" is printed under the heading, in the same
+   element the screen reader is listening to. */
+.feed-sub {
+  font-family: var(--hand); font-size: 16px; color: var(--paper-dim);
+  padding: 8px 16px 0;
 }
 .feed-list {
   flex: 1; overflow-y: auto; overflow-x: hidden;
@@ -474,9 +493,18 @@ body {
   height: 34px; overflow: hidden;
   background: var(--acid); color: var(--ink);
   border-top: 2px solid var(--ink);
-  display: flex; align-items: center;
+  display: flex; align-items: stretch;
   pointer-events: none;
 }
+/* The label does not move. Without it a run of years reads as a tour
+   announcement rather than as the list already on screen. */
+.ticker-label {
+  flex-shrink: 0; display: flex; align-items: center;
+  padding: 0 14px; background: var(--ink); color: var(--acid);
+  font-family: var(--display); text-transform: uppercase;
+  font-size: 13px; letter-spacing: .1em;
+}
+.ticker-window { flex: 1; overflow: hidden; display: flex; align-items: center; }
 .ticker-track {
   display: flex; flex-shrink: 0; gap: 0;
   animation: marquee 64s linear infinite;
@@ -487,13 +515,20 @@ body {
 .ticker-item {
   font-family: var(--display); text-transform: uppercase;
   font-size: 14px; letter-spacing: .04em;
-  padding: 0 14px; white-space: nowrap;
-  display: flex; align-items: center; gap: 10px;
+  padding: 0 16px; white-space: nowrap;
+  display: flex; align-items: baseline; gap: 8px;
 }
-.ticker-item::after {
-  content: "✦"; font-family: var(--body); font-size: 11px; opacity: .55;
+/* The separator leads each entry rather than trailing it. Trailing, the year of
+   the next entry sat against the name of the previous one and the run was
+   ambiguous about which date belonged to which night. */
+.ticker-item::before {
+  content: "✦"; font-family: var(--body); font-size: 11px; opacity: .5;
+  align-self: center; margin-right: 4px;
 }
-.ticker-item .year { font-family: var(--body); font-weight: 700; font-size: 11px; opacity: .6; }
+.ticker-item .year {
+  font-family: var(--body); font-weight: 700; font-size: 11px;
+  opacity: .65; letter-spacing: .06em;
+}
 
 /* ============================================================
    Buttons that sit on the map
@@ -765,6 +800,7 @@ body.sound-on .feed { display: none; }
   .fab { bottom: 62px; right: 16px; padding: 13px 18px; }
   .ticker { height: 28px; }
   .ticker-item { font-size: 12px; }
+  .ticker-label { font-size: 11px; padding: 0 10px; }
 
   .feed-toggle {
     position: fixed; bottom: 62px; left: 16px; z-index: 951;

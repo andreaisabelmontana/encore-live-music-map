@@ -1,20 +1,19 @@
 /**
- * The strip of dates along the bottom of the page.
+ * The strip along the bottom of the page.
  *
- * A tour poster lists its dates in a run down the bottom, and that is what this
- * is: the moments currently on the map, moving past. It is decoration with a
- * source, so it always shows real rows rather than filler.
+ * A poster lists its dates in a run down the bottom, which is the look this
+ * borrows. The danger in borrowing it is that a run of years reads as a tour
+ * announcement, as though these were shows to buy tickets for. They are the
+ * opposite: nights that already happened and are pinned on the map right now.
  *
- * Two details make it behave.
+ * Two things keep that clear. A fixed label at the left says what the run is,
+ * and the run is in the same order as the rail, so the strip is visibly the list
+ * the person is already looking at rather than a second, unexplained one.
  *
- * The track holds the same list twice and translates by exactly half its width,
- * so the loop closes with no gap and no measurement. The alternative, moving by
- * a pixel count read from the DOM, breaks the moment a font loads late or the
- * window resizes.
- *
- * It never animates in isolation: `prefers-reduced-motion` stops the marquee in
- * the stylesheet, and this module caps how many entries it renders, because the
- * strip is scenery and should never cost the map a frame.
+ * The track holds the same entries twice and translates by exactly half its own
+ * width, so the loop closes with no gap and no measurement. Moving by a pixel
+ * count read from the DOM breaks the moment a font loads late or the window
+ * resizes.
  *
  * @module ui/ticker
  */
@@ -23,19 +22,28 @@
  * @typedef {import("../core/types.js").Moment} Moment
  */
 
-/** Enough to read as a tour list, few enough to stay cheap to animate. */
+/** Enough to read as a run of dates, few enough to stay cheap to animate. */
 const MAX_ENTRIES = 26;
 
 /**
  * @param {HTMLElement} root
  */
 export function createTicker(root) {
+  const label = document.createElement("span");
+  label.className = "ticker-label";
+  label.textContent = "on the map";
+
+  const window_ = document.createElement("div");
+  window_.className = "ticker-window";
+
+  root.replaceChildren(label, window_);
+
   /**
-   * @param {Moment[]} moments
+   * @param {Moment[]} moments In the order the rail is showing them.
    */
   function render(moments) {
     if (moments.length === 0) {
-      root.replaceChildren();
+      window_.replaceChildren();
       return;
     }
 
@@ -49,7 +57,7 @@ export function createTicker(root) {
       for (const moment of entries) track.append(entry(moment));
     }
 
-    root.replaceChildren(track);
+    window_.replaceChildren(track);
   }
 
   return { render };
@@ -63,13 +71,15 @@ function entry(moment) {
   const item = document.createElement("span");
   item.className = "ticker-item";
 
-  const name = document.createElement("span");
-  name.textContent = `${moment.artist} · ${moment.city}`;
-
   const year = document.createElement("span");
   year.className = "year";
   year.textContent = String(moment.year);
 
-  item.append(name, year);
+  const name = document.createElement("span");
+  name.textContent = `${moment.artist}, ${moment.city}`;
+
+  // Year first, the way a listing reads, rather than trailing the name where it
+  // looks like a date being advertised.
+  item.append(year, name);
   return item;
 }

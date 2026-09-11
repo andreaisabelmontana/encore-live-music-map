@@ -14,7 +14,7 @@ fan footage.
 ![Dependencies](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-![The map, with the feed of recently pinned moments](docs/screenshots/map.png)
+![The map, with the rail of moments alongside it](docs/screenshots/map.png)
 
 ---
 
@@ -22,6 +22,9 @@ fan footage.
 
 - **Explore a dark world map** of live music moments. Nearby pins cluster as you
   zoom out.
+- **Read the same moments as a list.** The rail beside the map holds whatever the
+  map is showing, ordered by hearts, by how recent the night was, or by how close
+  it is to the middle of the map. Panning reorders that last one as you go.
 - **Open a moment** to see the performance and the story of why it mattered.
 - **Search and filter** by artist, city, venue or genre. Search ignores accents,
   so `rosalia` finds Rosalía.

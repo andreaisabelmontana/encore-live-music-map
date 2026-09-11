@@ -11,7 +11,13 @@
 
 import { createAppState } from "./core/state.js";
 import { createStore } from "./core/storage.js";
-import { applyLikeBumps, filterMoments, sortByLove } from "./core/moments.js";
+import {
+  applyLikeBumps,
+  filterMoments,
+  sortByDistanceFrom,
+  sortByLove,
+  sortByRecency
+} from "./core/moments.js";
 import { isValidMoment } from "./core/validate.js";
 import { decodeMoment, parseHash, shareUrlFor } from "./core/share.js";
 import { createMapView } from "./ui/mapView.js";
@@ -36,7 +42,8 @@ const store = createStore(safeLocalStorage());
 const state = createAppState({
   /** @type {Moment[]} */ moments: [],
   genre: "all",
-  query: ""
+  query: "",
+  sort: "loved"
 });
 
 boot().catch((error) => {
@@ -81,12 +88,16 @@ async function boot() {
     {
       list: element("feedList"),
       count: element("feedCount"),
-      status: element("feedStatus")
+      status: element("feedStatus"),
+      sort: element("feedSort")
     },
-    (moment) => {
-      document.body.classList.remove("feed-open");
-      mapView.focus(moment);
-      openMoment(moment);
+    {
+      onSelect: (moment) => {
+        document.body.classList.remove("feed-open");
+        mapView.focus(moment);
+        openMoment(moment);
+      },
+      onSortChange: (sort) => state.set({ sort })
     }
   );
 
@@ -158,16 +169,45 @@ async function boot() {
   }
 
   /**
-   * @param {{moments: Moment[], genre: string, query: string}} current
+   * Put the visible moments in the order the rail is set to.
+   *
+   * "near" is measured from the middle of the map rather than from the person,
+   * because the app never asks for a location and the map centre is the place
+   * they are actually looking at.
+   *
+   * @param {{moments: Moment[], genre: string, query: string, sort: string}} current
+   * @returns {Moment[]}
+   */
+  function ordered(current) {
+    const visible = filterMoments(current.moments, current);
+    if (current.sort === "recent") return sortByRecency(visible);
+    if (current.sort === "near") return sortByDistanceFrom(visible, mapView.map.getCenter());
+    return sortByLove(visible);
+  }
+
+  /**
+   * @param {{moments: Moment[], genre: string, query: string, sort: string}} current
    */
   function render(current) {
-    const visible = filterMoments(current.moments, current);
-    const ranked = sortByLove(visible);
+    const ranked = ordered(current);
     chips.render(current.moments, current.genre);
-    feed.render(ranked);
+    feed.render(ranked, current.sort);
+    // The strip along the bottom is the same list in the same order, which is
+    // what stops it reading as a separate set of dates.
     ticker.render(ranked);
-    mapView.render(visible);
+    mapView.render(filterMoments(current.moments, current));
   }
+
+  // Ordering by distance is relative to where the map is looking, so panning has
+  // to reorder the rail. Only the rail: rebuilding the pin layer on every pan
+  // would be wasteful, and the pins have not changed.
+  mapView.map.on("moveend", () => {
+    const current = state.get();
+    if (current.sort !== "near") return;
+    const ranked = ordered(current);
+    feed.render(ranked, current.sort);
+    ticker.render(ranked);
+  });
 
   function savePins() {
     store.write(
