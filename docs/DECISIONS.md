@@ -134,3 +134,56 @@ are stored as deltas rather than absolutes.
 and editing the seed data does not strand a visitor on a stale count. The cost is
 that pins live on one device only, which is the honest trade for having no
 accounts.
+
+---
+
+## 9. The data is fetched at build time, not at run time
+
+**Constraint.** The app needs real performances, and the archive that has them is
+rate limited to one request per second and answers a burst with a refusal. No
+visitor is going to wait half an hour for a map to load, and a static page cannot
+hold a key even if a faster keyed API existed.
+
+**Choice.** Move the fetching out of the browser entirely. A scheduled workflow
+runs the ingest, validates what it built, and commits the result as a static file
+the page downloads like any other asset.
+
+**Consequences.** The client stays keyless, dependency free and instant, and the
+slow part happens where slowness is free. Any future source that does need a key
+follows the same path, with the key in Actions secrets rather than in the page.
+The cost is that the data is as fresh as the last run, which for concerts that
+already happened is no cost at all.
+
+---
+
+## 10. The dataset is packed columnar, not written as objects
+
+**Constraint.** Tens of thousands of performances written one JSON object per
+record is several megabytes, most of it the same few thousand venue and artist
+names repeated over and over. That is a real download on a phone.
+
+**Choice.** Dictionaries for artists, venues and genres, and four integers per
+performance pointing into them. Rows are one flat array with a stride of four
+rather than an array of arrays, which removes two characters of punctuation per
+record.
+
+**Consequences.** The file is several times smaller before compression and
+compresses well afterwards. The cost is a format that has to be decoded, so both
+ends of it live in one module with the round trip under test, and a bundle from a
+version this code does not understand is refused rather than half read.
+
+---
+
+## 11. Rejected records are counted, not discarded quietly
+
+**Constraint.** Real archive data is missing things. Events with no date, events
+with no performer credited, venues with no coordinates. Any of those makes a
+record unusable on a map.
+
+**Choice.** Drop it, but count it by reason, and print the tally at the end of
+every run.
+
+**Consequences.** The run says what it kept and what it could not use, so a
+change that suddenly halves the yield is visible immediately. A pipeline that
+silently loses half its input looks exactly like one that works, and that is the
+failure mode worth engineering against.

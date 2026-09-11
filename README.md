@@ -55,6 +55,7 @@ src/
     soundmap.js    aggregates over a listening profile
     storage.js     local storage that cannot throw
     state.js       a small observable store, plus debounce
+    bundle.js      the columnar wire format for the ingested dataset
     format.js      escaping and display formatting
   ui/              views, each one unaware of the others
     mapView.js     tiles, pins, clustering, and their fallbacks
@@ -63,8 +64,13 @@ src/
     dialog.js      focus trap, Escape, focus restore, shared by all three overlays
     thumbnail.js   posters that always render
     motion.js      one place that honours prefers-reduced-motion
-data/              seed moments and the sample listening profile, as JSON
-test/              69 unit tests on the Node test runner
+scripts/ingest/    the build time data pipeline
+    http.mjs       rate limited, retrying, disk cached HTTP client
+    musicbrainz.mjs  the three paged reads
+    normalize.mjs  a MusicBrainz event into a moment, or a counted reject
+    run.mjs        the orchestrator, with a report at the end
+data/              curated moments, the ingested dataset, the listening sample
+test/              96 unit tests on the Node test runner
 ```
 
 State lives in one observable store. A handler describes a change, subscribers
@@ -77,8 +83,11 @@ video is embedded rather than hosted, and why there is no build step.
 If you are reviewing the code, these are the parts worth a look.
 
 - **Tested rules.** Every decision the app makes lives in `src/core/` and is
-  covered by 69 tests that run in under a second on the Node test runner, with no
-  test framework installed. `test/share.test.js` is the interesting one.
+  covered by 96 tests that run in about a second on the Node test runner, with no
+  test framework installed. `test/share.test.js` and `test/normalize.test.js` are
+  the interesting ones: the first packs a moment into a link and refuses tampered
+  ones, the second feeds the pipeline the shapes real archive data actually
+  contains.
 - **Types without a build.** JSDoc annotations checked by `tsc --checkJs` in
   strict mode. Full type coverage, zero compile step, source that ships as it is
   written. The Leaflet global is typed through `types/globals.d.ts`.
@@ -128,38 +137,68 @@ npm run coverage    # unit tests with coverage
 npm run lint
 npm run typecheck
 npm run validate:data
+npm run ingest      # rebuild the dataset, or a slice of it
 ```
 
-## The data
+The ingest takes flags, because a full run is long and a development run should
+not be:
 
-`data/moments.json` holds the seed moments, shaped the way a live API would
-return them: one performance, one venue, one point on the earth. Every entry is
-validated in CI against the same rules a shared link has to satisfy.
+```bash
+node scripts/ingest/run.mjs --event-pages 20 --place-pages 20
+```
 
-Seed moments carry `videoId: null` deliberately. A guessed YouTube id resolves to
-the wrong performance, so instead of pretending, each seed moment offers a search
-for fan footage of that exact artist, venue and year. Paste a real link through
-the pin form and it embeds inline.
+## Where the data comes from
 
-## What a real backend would change
+The performances are real, and they arrive through a pipeline rather than by
+hand.
 
-Less than it looks. The app renders from a plain array of moment objects, and two
-functions in `main.js` are the entire seam:
+A page served from GitHub Pages cannot hold an API key, and it certainly cannot
+make a rate limited crawl of a public archive while someone waits. So the
+fetching happens at build time. A scheduled workflow runs `npm run ingest`, which
+reads MusicBrainz in three passes, joins them, validates every record against the
+same rules a shared link has to satisfy, packs the result, and commits it. The
+browser only ever downloads a static file.
 
-- `loadMoments()` reads a JSON file today. Point it at a small serverless proxy
-  holding a Setlist.fm key for past setlists and venue geography, plus the
-  YouTube Data API for clip lookup, and everything above it is unchanged.
-- `loadListeningProfile()` reads a sample profile today. A real one needs Spotify
-  OAuth for top artists and MusicBrainz for where each artist is from, because
-  Spotify exposes the artist but not the origin.
+```
+venues   83,164 places, filtered to those with coordinates, the join key
+genres   artists per genre tag, because an event carries no genre and one
+         lookup per artist would be tens of thousands of requests
+events   82,685 concerts, joined to both, normalised, validated, packed
+```
 
-Neither belongs in a static site: a page served from GitHub Pages has nowhere
-safe to keep an API key.
+Three details are worth opening the code for.
+
+- **The client is polite and stubborn.** One request per second through a single
+  queue, retries tuned to a measured refusal rate rather than a guessed one, and
+  every response cached on disk, so a failed run resumes instead of restarting.
+- **Rejects are counted, not swallowed.** The run reports how many records were
+  dropped and why, because a pipeline that silently loses half its input looks
+  exactly like one that works.
+- **The wire format is columnar.** Artists, venues and genres each appear once in
+  a dictionary and every performance is four integers pointing into them. Both
+  ends of the format live in `src/core/bundle.js` and the round trip is tested.
+
+`data/moments.json` still holds the curated moments, the ones with a story
+attached. Those are written by people. The ingested set is what they sit on.
+
+Every moment carries `videoId: null` until someone attaches a clip. A guessed
+YouTube id resolves to the wrong performance, so instead of pretending, a moment
+with no clip offers a search for footage of that exact artist, venue and year.
+Paste a real link through the pin form and it embeds inline.
+
+## What is still ahead of this
+
+`loadListeningProfile()` in `main.js` reads a sample profile. A real one needs
+Spotify OAuth for top artists and MusicBrainz for where each artist is from,
+because Spotify exposes the artist but not the origin. That one is a genuine
+backend, since OAuth needs a callback the browser cannot fake.
 
 ## Roadmap
 
 - [x] Clustering, shareable links, persistent pins, a keyboard path through the app
-- [ ] Live ingest through a serverless proxy
+- [x] A scheduled ingest of real performances from MusicBrainz
+- [ ] A spatial index and clustering that hold up at the full dataset size
+- [ ] Search that ranks rather than scans
 - [ ] Real listening profiles rather than the sample
 - [ ] Artist view: every show as a timeline and a touring map
 - [ ] Collections, so a set of moments can be saved and shared as one

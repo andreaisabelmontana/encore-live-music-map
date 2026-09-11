@@ -15,7 +15,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "validate:data": "node scripts/validate-data.mjs",
-    "check": "npm run lint && npm run typecheck && npm run validate:data && npm test"
+    "check": "npm run lint && npm run typecheck && npm run validate:data && npm test",
+    "ingest": "node scripts/ingest/run.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",

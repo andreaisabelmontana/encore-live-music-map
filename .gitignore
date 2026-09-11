@@ -9,3 +9,6 @@ coverage/
 
 # local editor and agent settings
 .claude/
+
+# ingest response cache
+.cache/

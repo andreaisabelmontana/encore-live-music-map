@@ -1,0 +1,78 @@
+name: Ingest performances
+
+# Rebuilds data/performances.json from MusicBrainz and commits it.
+#
+# This is the answer to the constraint the whole project is built around: a page
+# served from GitHub Pages cannot hold an API key or make a rate limited crawl,
+# so the fetching happens here, on a schedule, and the browser only ever loads a
+# static file. Nothing secret and nothing slow reaches the client.
+#
+# A cold run makes roughly seventeen hundred requests at one per second. The
+# response cache is restored between runs, so a normal week is far shorter than
+# the first run, and a failed run resumes rather than starting over.
+
+on:
+  schedule:
+    # Mondays, early UTC, when the MusicBrainz mirrors are least busy.
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      event-pages:
+        description: Pages of concerts to read, one hundred per page
+        default: "900"
+      place-pages:
+        description: Pages of venues to read, one hundred per page
+        default: "900"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - run: npm ci
+
+      - name: Restore the response cache
+        uses: actions/cache@v4
+        with:
+          path: .cache/ingest
+          key: ingest-cache-${{ github.run_id }}
+          restore-keys: |
+            ingest-cache-
+
+      - name: Ingest
+        run: >
+          node scripts/ingest/run.mjs
+          --event-pages ${{ inputs.event-pages || '900' }}
+          --place-pages ${{ inputs.place-pages || '900' }}
+
+      - name: Check the result before committing it
+        run: |
+          npm run validate:data
+          npm test
+
+      - name: Commit if the dataset changed
+        run: |
+          if git diff --quiet -- data/performances.json; then
+            echo "no change"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/performances.json
+          git commit -m "Refresh the performance dataset from MusicBrainz"
+          git push

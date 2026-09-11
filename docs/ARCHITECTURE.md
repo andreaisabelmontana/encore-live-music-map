@@ -70,10 +70,61 @@ Before this, filter state lived in three module level variables and every handle
 had to remember to call three render functions. Missing one was the most common
 bug in the app.
 
+## The pipeline
+
+The dataset is built, not typed. Everything under `scripts/ingest/` runs in CI on
+a schedule and never in a browser.
+
+```mermaid
+flowchart LR
+    MB[(MusicBrainz)]
+
+    subgraph ingest["scripts/ingest — runs in CI"]
+        HTTP[http.mjs<br/>one queue, 1 req/s<br/>retry, disk cache]
+        P1[places<br/>id → coordinates]
+        P2[genres<br/>artist → genre]
+        P3[events<br/>concerts]
+        N[normalize.mjs<br/>join + validate<br/>count the rejects]
+        K[bundle.js<br/>pack columnar]
+    end
+
+    OUT[(data/performances.json)]
+    APP[the browser]
+
+    MB --> HTTP
+    HTTP --> P1 & P2 & P3
+    P1 --> N
+    P2 --> N
+    P3 --> N
+    N --> K --> OUT --> APP
+```
+
+Three passes rather than one, because of how the API is shaped. The event search
+returns concerts with a date, a performer and a venue, but no coordinates. The
+place search returns coordinates. Events carry no genre at all, and a lookup per
+artist would be tens of thousands of requests, so artists are enumerated by genre
+tag instead and joined by id.
+
+The rate limit is the design constraint. One request per second, roughly seventeen
+hundred requests for a full sweep, which is half an hour at best. Three things
+follow from that:
+
+- **Every response is cached on disk**, so a failure at request 1,600 costs one
+  request rather than all of them, and the weekly run in CI restores the cache
+  before it starts.
+- **Backoff is flat before it is exponential.** Sampling the endpoint at two
+  different intervals produced the same refusal rate, which means congestion
+  rather than punishment, and doubling the wait against a coin flip just wastes
+  minutes.
+- **Rejects are tallied by reason.** The run ends with how many records were
+  dropped for having no performer, no date or a venue with no coordinates. A
+  pipeline that silently loses half its input looks exactly like one that works.
+
 ## Where the moments come from
 
 ```
-data/moments.json
+data/moments.json           curated, written by people, carries the stories
+data/performances.json      ingested, packed, rebuilt weekly
   → fetch on boot
   → validateMoment() on every entry, invalid ones dropped and reported
   → merged with your own pins from localStorage
