@@ -133,10 +133,13 @@ async function boot() {
   state.subscribe(render);
   render(state.get());
 
-  createSplash(() => {
+  const splash = createSplash(() => {
     mapView.invalidate();
     openFromLocation();
   });
+
+  // Someone arriving on a shared link came for that moment, not for the intro.
+  if (parseHash(location.hash)) splash.skip();
 
   window.addEventListener("hashchange", openFromLocation);
 

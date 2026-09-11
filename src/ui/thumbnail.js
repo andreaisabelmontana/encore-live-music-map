@@ -62,14 +62,20 @@ export function createPoster(moment, className) {
   img.src = posterFor(moment);
 
   if (moment.videoId) {
-    img.addEventListener("load", () => {
-      if (img.naturalWidth > 0 && img.naturalWidth <= PLACEHOLDER_WIDTH) {
-        img.src = FALLBACK_POSTER;
-      }
-    });
-    img.addEventListener("error", () => {
+    // Swap once. Assigning `src` inside a handler retriggers that handler, and a
+    // provider that answers every request with something unusable would
+    // otherwise loop.
+    let swapped = false;
+    const useFallback = () => {
+      if (swapped) return;
+      swapped = true;
       img.src = FALLBACK_POSTER;
+    };
+
+    img.addEventListener("load", () => {
+      if (img.naturalWidth > 0 && img.naturalWidth <= PLACEHOLDER_WIDTH) useFallback();
     });
+    img.addEventListener("error", useFallback);
   }
 
   return img;
