@@ -36,6 +36,12 @@ const MB_TAGS = {
 const NOT_AN_ARTIST = new Set(["Various Artists", "[unknown]", "[no artist]"]);
 const PAGE = 100;
 
+/** Pages that must fail back to back before a pass is treated as hopeless. */
+const GIVE_UP_AFTER = 10;
+
+/** Pages lost to a failure that retries could not clear, reported at the end. */
+export const skipped = { pages: 0 };
+
 /**
  * The slice of the HTTP client these readers need. Taking the narrow shape
  * rather than the concrete client is what lets a test hand them a fake.
@@ -59,10 +65,34 @@ async function* pages(client, path, query, collection, maxPages, onPage) {
   let offset = 0;
   let total = Infinity;
   let page = 0;
+  let consecutiveFailures = 0;
 
   while (offset < total && page < maxPages) {
     const url = `${API}/${path}?query=${encodeURIComponent(query)}&limit=${PAGE}&offset=${offset}&fmt=json`;
-    const body = await client.getJson(url);
+
+    /** @type {any} */
+    let body;
+    try {
+      body = await client.getJson(url);
+      consecutiveFailures = 0;
+    } catch (error) {
+      // One page that will not load is a hundred records missing, not a reason
+      // to discard the hour of work behind it. Skip it, count it, carry on. Only
+      // a run of failures means the endpoint is genuinely gone.
+      skipped.pages += 1;
+      consecutiveFailures += 1;
+      console.warn(
+        `[${path}] skipping offset ${offset}: ${error instanceof Error ? error.message.split(" for ")[0] : error}`
+      );
+      if (consecutiveFailures >= GIVE_UP_AFTER) {
+        console.warn(`[${path}] ${consecutiveFailures} pages failed in a row, ending this pass`);
+        return;
+      }
+      offset += PAGE;
+      page += 1;
+      continue;
+    }
+
     total = Number(body.count) || 0;
     const records = body[collection] ?? [];
     if (records.length === 0) return;

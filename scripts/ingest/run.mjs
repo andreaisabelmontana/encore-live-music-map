@@ -25,7 +25,7 @@ import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { createClient } from "./http.mjs";
-import { fetchArtistGenres, fetchConcerts, fetchPlaces } from "./musicbrainz.mjs";
+import { fetchArtistGenres, fetchConcerts, fetchPlaces, skipped } from "./musicbrainz.mjs";
 import { normalizeBatch } from "./normalize.mjs";
 import { pack } from "../../src/core/bundle.js";
 import { GENRES } from "../../src/core/validate.js";
@@ -151,6 +151,7 @@ function report(input) {
   for (const [reason, count] of Object.entries(input.tally).sort((a, b) => b[1] - a[1])) {
     console.log(`  ${reason.padEnd(26)} ${count.toLocaleString("en-US")}`);
   }
+  console.log("pages skipped  ", skipped.pages);
   console.log("requests       ", input.client.stats.requests);
   console.log("cache hits     ", input.client.stats.cacheHits);
   console.log("retries        ", input.client.stats.retries);
