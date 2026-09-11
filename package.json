@@ -1,0 +1,28 @@
+{
+  "name": "encore-live-music-map",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ENCORE, a map of live music memory. Leaflet map, tested ES modules, no build step.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node --test",
+    "coverage": "node --test --experimental-test-coverage",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "validate:data": "node scripts/validate-data.mjs",
+    "check": "npm run lint && npm run typecheck && npm run validate:data && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.12.0",
+    "@types/leaflet": "^1.9.12",
+    "@types/node": "^22.7.5",
+    "eslint": "^9.12.0",
+    "globals": "^15.11.0",
+    "typescript": "^5.6.3"
+  }
+}

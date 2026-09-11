@@ -6,3 +6,6 @@ build/
 npm-debug.log*
 coverage/
 .next/
+
+# local editor and agent settings
+.claude/

@@ -1,0 +1,110 @@
+[
+  {
+    "artist": "Bad Bunny",
+    "origin": "San Juan, PR",
+    "country": "Puerto Rico",
+    "genre": "reggaeton",
+    "lat": 18.4655,
+    "lng": -66.1057,
+    "minutes": 4210
+  },
+  {
+    "artist": "Rosalía",
+    "origin": "Barcelona, ES",
+    "country": "Spain",
+    "genre": "latin",
+    "lat": 41.3874,
+    "lng": 2.1686,
+    "minutes": 3120
+  },
+  {
+    "artist": "The Weeknd",
+    "origin": "Toronto, CA",
+    "country": "Canada",
+    "genre": "r&b",
+    "lat": 43.6532,
+    "lng": -79.3832,
+    "minutes": 2840
+  },
+  {
+    "artist": "Karol G",
+    "origin": "Medellín, CO",
+    "country": "Colombia",
+    "genre": "reggaeton",
+    "lat": 6.2442,
+    "lng": -75.5812,
+    "minutes": 2510
+  },
+  {
+    "artist": "Tame Impala",
+    "origin": "Perth, AU",
+    "country": "Australia",
+    "genre": "indie",
+    "lat": -31.9523,
+    "lng": 115.8613,
+    "minutes": 2330
+  },
+  {
+    "artist": "Frank Ocean",
+    "origin": "New Orleans, US",
+    "country": "USA",
+    "genre": "r&b",
+    "lat": 29.9511,
+    "lng": -90.0715,
+    "minutes": 2180
+  },
+  {
+    "artist": "Arctic Monkeys",
+    "origin": "Sheffield, UK",
+    "country": "UK",
+    "genre": "rock",
+    "lat": 53.3811,
+    "lng": -1.4701,
+    "minutes": 1990
+  },
+  {
+    "artist": "SZA",
+    "origin": "St. Louis, US",
+    "country": "USA",
+    "genre": "r&b",
+    "lat": 38.627,
+    "lng": -90.1994,
+    "minutes": 1760
+  },
+  {
+    "artist": "Fred again..",
+    "origin": "London, UK",
+    "country": "UK",
+    "genre": "electronic",
+    "lat": 51.5074,
+    "lng": -0.1278,
+    "minutes": 1620
+  },
+  {
+    "artist": "Kendrick Lamar",
+    "origin": "Compton, US",
+    "country": "USA",
+    "genre": "hip-hop",
+    "lat": 33.8958,
+    "lng": -118.2201,
+    "minutes": 1450
+  },
+  {
+    "artist": "Daft Punk",
+    "origin": "Paris, FR",
+    "country": "France",
+    "genre": "electronic",
+    "lat": 48.8566,
+    "lng": 2.3522,
+    "minutes": 1230
+  },
+  {
+    "artist": "Tyler, The Creator",
+    "origin": "Los Angeles, US",
+    "country": "USA",
+    "genre": "hip-hop",
+    "lat": 34.0522,
+    "lng": -118.2437,
+    "minutes": 1080
+  }
+]

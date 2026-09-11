@@ -5,112 +5,139 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ENCORE · the map of live music memory</title>
   <meta name="description" content="Pin the shows that mattered. Relive the ones you missed. A map of live music memory." />
+
+  <!--
+    Content Security Policy. The app has two untrusted inputs, the pin form and
+    the share link payload, so a policy with no inline script is the backstop
+    behind the escaping in the code. Every handler is attached in JavaScript,
+    which is what makes this possible at all.
+  -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' https://unpkg.com;
+    style-src 'self' 'unsafe-inline' https://unpkg.com https://fonts.googleapis.com;
+    font-src https://fonts.gstatic.com;
+    img-src 'self' data: https://server.arcgisonline.com https://tile.openstreetmap.org https://i.ytimg.com;
+    frame-src https://www.youtube-nocookie.com;
+    connect-src 'self';
+    base-uri 'self';
+    form-action 'none';
+    object-src 'none'" />
+
   <meta property="og:title" content="ENCORE · the map of live music memory" />
   <meta property="og:description" content="Pin the shows that mattered. Relive the ones you missed." />
   <meta property="og:type" content="website" />
   <meta name="theme-color" content="#0a0a0f" />
 
-  <!-- Leaflet + marker clustering -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Archivo+Black&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://server.arcgisonline.com" />
 
+  <!-- Leaflet and its cluster plugin, pinned by version and verified by hash. -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H"
+        crossorigin="anonymous" />
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH"
+          crossorigin="anonymous"></script>
+  <script defer src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+          integrity="sha384-eXVCORTRlv4FUUgS/xmOyr66XBVraen8ATNLMESp92FKXLAMiKkerixTiBvXriZr"
+          crossorigin="anonymous"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Archivo+Black&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+
+  <script type="module" src="src/main.js"></script>
 </head>
 <body>
-  <!-- ===== Intro splash (cassette → stage) ===== -->
+  <a class="skip-link" href="#feed">skip to the list of moments</a>
+
+  <!-- ===== Intro splash (cassette to stage) ===== -->
   <div class="splash" id="splash" data-phase="cassette">
     <img class="splash-bg cassette" src="assets/cassette.webp" alt="" />
     <img class="splash-bg stage" src="assets/stage.webp" alt="" />
     <div class="splash-grain"></div>
     <div class="splash-content">
-      <span class="splash-spark s1">✦</span>
-      <span class="splash-spark s2">✧</span>
-      <span class="splash-spark s3">✦</span>
+      <span class="splash-spark s1" aria-hidden="true">✦</span>
+      <span class="splash-spark s2" aria-hidden="true">✧</span>
+      <span class="splash-spark s3" aria-hidden="true">✦</span>
       <p class="splash-kicker" id="splashKicker">▸ loading the tape</p>
       <h1 class="splash-word">ENCORE</h1>
       <p class="splash-tag">the map of live music memory</p>
-      <button class="splash-play" id="splashPlay">▶ press play</button>
-      <p class="splash-skip" id="splashSkip">or tap anywhere to skip</p>
+      <button class="splash-play" id="splashPlay" type="button">▶ press play</button>
+      <button class="splash-skip" id="splashSkip" type="button">skip the intro</button>
     </div>
   </div>
 
-  <!-- grain overlay over whole app -->
-  <div class="grain-overlay"></div>
+  <div class="grain-overlay" aria-hidden="true"></div>
 
   <!-- ===== Top bar ===== -->
   <header class="topbar">
     <div class="brand">
-      <span class="brand-mark">◉</span>
+      <span class="brand-mark" aria-hidden="true">◉</span>
       <span class="brand-word">ENCORE</span>
     </div>
 
     <div class="search">
-      <input id="searchInput" type="text" placeholder="search artist, city, venue…" autocomplete="off" />
+      <label class="visually-hidden" for="searchInput">search moments</label>
+      <input id="searchInput" type="search" placeholder="search artist, city, venue…" autocomplete="off" />
     </div>
 
-    <nav class="filters" id="genreFilters"><!-- genre chips injected --></nav>
+    <nav class="filters" id="genreFilters" aria-label="filter by genre"></nav>
 
-    <button class="spotify-btn" id="spotifyBtn" title="connect spotify">
-      <span class="sp-logo">●</span> connect spotify
+    <button class="spotify-btn" id="spotifyBtn" type="button" aria-pressed="false">
+      <span class="sp-logo" aria-hidden="true">●</span> <span class="sp-label">connect spotify</span>
     </button>
-    <button class="profile-btn" title="your boards">✦</button>
   </header>
 
   <!-- ===== Map ===== -->
-  <div id="map"></div>
+  <div id="map" role="application" aria-label="world map of live music moments"></div>
 
   <!-- ===== Left rail: feed of moments ===== -->
-  <aside class="feed" id="feed">
+  <aside class="feed" id="feed" aria-labelledby="feedTitle">
     <div class="feed-head">
-      <h2>recently pinned</h2>
+      <h2 id="feedTitle">recently pinned</h2>
       <span class="feed-count" id="feedCount">0</span>
     </div>
-    <div class="feed-list" id="feedList"><!-- cards injected --></div>
+    <p class="visually-hidden" id="feedStatus" role="status" aria-live="polite"></p>
+    <div class="feed-list" id="feedList"></div>
   </aside>
 
-  <!-- ===== Sound Map panel (after Spotify connect) ===== -->
-  <aside class="soundpanel" id="soundPanel" hidden>
+  <!-- ===== Sound map panel ===== -->
+  <aside class="soundpanel" id="soundPanel" aria-labelledby="soundTitle" hidden>
     <div class="sp-head">
       <div>
-        <h2><span class="sp-logo">●</span> your sound map</h2>
+        <h2 id="soundTitle"><span class="sp-logo" aria-hidden="true">●</span> your sound map</h2>
         <p class="sp-sub" id="soundSub">where your music lives</p>
       </div>
-      <button class="sp-close" id="soundClose">✕</button>
+      <button class="sp-close" id="soundClose" type="button" aria-label="close the sound map">✕</button>
     </div>
-    <div class="sp-stats" id="soundStats"><!-- stat cards --></div>
-    <div class="sp-list" id="soundList"><!-- top artists --></div>
+    <div class="sp-stats" id="soundStats"></div>
+    <div class="sp-list" id="soundList"></div>
   </aside>
 
-  <!-- ===== Spotify connect modal ===== -->
+  <!-- ===== Connect panel ===== -->
   <div class="modal-scrim" id="spotifyModal" hidden>
     <div class="sp-card">
-      <button class="modal-close" id="spotifyClose">✕</button>
-      <div class="sp-logo-big">●</div>
-      <h2>connect your Spotify</h2>
-      <p class="sp-card-sub">we'll map your most-streamed artists by where their sound comes from — and graph the geography of your taste.</p>
-      <button class="sp-connect" id="spotifyConnect">● connect with Spotify</button>
-      <p class="sp-demo-note">prototype: this loads a sample listening profile. real version uses Spotify OAuth + MusicBrainz origins.</p>
+      <button class="modal-close" id="spotifyClose" type="button" aria-label="close">✕</button>
+      <div class="sp-logo-big" aria-hidden="true">●</div>
+      <h2 id="spotifyTitle">connect your Spotify</h2>
+      <p class="sp-card-sub">map your most streamed artists by where their sound comes from, and graph the geography of your taste.</p>
+      <button class="sp-connect" id="spotifyConnect" type="button">● connect with Spotify</button>
+      <p class="sp-demo-note">prototype: this loads a sample listening profile. the real version needs Spotify OAuth plus MusicBrainz origins.</p>
     </div>
   </div>
 
-  <!-- ===== Mobile feed toggle ===== -->
-  <button class="feed-toggle" id="feedToggle">▤ feed</button>
+  <button class="feed-toggle" id="feedToggle" type="button" aria-controls="feed" aria-expanded="false">▤ feed</button>
 
-  <!-- ===== Add-a-moment FAB ===== -->
-  <button class="fab" id="addBtn">
-    <span>＋</span> pin a moment
+  <button class="fab" id="addBtn" type="button">
+    <span aria-hidden="true">＋</span> pin a moment
   </button>
 
-  <!-- ===== Moment modal (player + story) ===== -->
+  <!-- ===== Moment player ===== -->
   <div class="modal-scrim" id="modal" hidden>
     <div class="modal-card">
-      <button class="modal-close" id="modalClose">✕</button>
+      <button class="modal-close" id="modalClose" type="button" aria-label="close this moment">✕</button>
       <div class="modal-video" id="modalVideo"></div>
       <div class="modal-body">
         <div class="modal-tags" id="modalTags"></div>
@@ -118,20 +145,20 @@
         <p class="modal-meta" id="modalMeta"></p>
         <blockquote class="modal-story" id="modalStory"></blockquote>
         <div class="modal-actions">
-          <button class="btn-ghost" id="modalYt">↗ open on youtube</button>
-          <button class="btn-ghost" id="modalShare">⤴ share</button>
-          <button class="btn-save" id="modalSave">♥ <span id="saveCount"></span></button>
+          <button class="btn-ghost" id="modalYt" type="button">↗ open on youtube</button>
+          <button class="btn-ghost" id="modalShare" type="button">⤴ share</button>
+          <button class="btn-save" id="modalSave" type="button" aria-label="love this moment">♥ <span id="saveCount"></span></button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ===== Add-moment sheet ===== -->
+  <!-- ===== Pin form ===== -->
   <div class="sheet-scrim" id="sheet" hidden>
-    <form class="sheet-card" id="addForm">
-      <div class="sheet-grab"></div>
-      <h2>pin a moment</h2>
-      <p class="sheet-sub">drop a show that meant something. paste a youtube link — we embed it, we never re-host.</p>
+    <form class="sheet-card" id="addForm" novalidate>
+      <div class="sheet-grab" aria-hidden="true"></div>
+      <h2 id="sheetTitle">pin a moment</h2>
+      <p class="sheet-sub">drop a show that meant something. paste a youtube link, we embed it, we never re-host.</p>
       <label>artist <input name="artist" required placeholder="Bad Bunny" /></label>
       <div class="sheet-row">
         <label>venue <input name="venue" required placeholder="Estadio La Plata" /></label>
@@ -143,22 +170,18 @@
           <select name="genre">
             <option>reggaeton</option><option>pop</option><option>rock</option>
             <option>hip-hop</option><option>electronic</option><option>indie</option>
-            <option>r&b</option><option>latin</option><option>other</option>
+            <option>r&amp;b</option><option>latin</option><option>other</option>
           </select>
         </label>
       </div>
-      <label>youtube link <input name="yt" placeholder="https://youtube.com/watch?v=…" /></label>
-      <label>why it mattered <textarea name="story" rows="3" placeholder="the bass dropped and 80,000 people lost it at once…"></textarea></label>
-      <p class="sheet-hint" id="sheetHint">tip: click anywhere on the map first to set the location 📍</p>
+      <label>youtube link <input name="yt" type="url" placeholder="https://youtube.com/watch?v=…" /></label>
+      <label>why it mattered <textarea name="story" rows="3" maxlength="600" placeholder="the bass dropped and 80,000 people lost it at once…"></textarea></label>
+      <p class="sheet-hint" id="sheetHint" role="status" aria-live="polite">tip: click anywhere on the map first to set the location 📍</p>
       <div class="sheet-actions">
         <button type="button" class="btn-ghost" id="sheetCancel">cancel</button>
         <button type="submit" class="btn-save">pin it</button>
       </div>
     </form>
   </div>
-
-  <script src="data.js"></script>
-  <script src="spotify.js"></script>
-  <script src="app.js"></script>
 </body>
 </html>

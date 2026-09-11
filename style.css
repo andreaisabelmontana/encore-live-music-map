@@ -416,3 +416,86 @@ body.sound-on .feed { display: none; }
     width: auto; max-height: 55vh; z-index: 940;
   }
 }
+
+/* ============================================================
+   Accessibility and resilience
+   ------------------------------------------------------------
+   Everything below exists for someone using the app with a
+   keyboard, a screen reader, a motion sensitivity, or a slow
+   connection. It is appended as one block so the intent stays
+   readable rather than scattered through the file.
+   ============================================================ */
+
+/* Content that only a screen reader needs: labels, live regions. */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+/* The map is a canvas of divs and effectively unreachable by keyboard, so the
+   first Tab stop on the page jumps past it to the feed, which lists the same
+   moments as real buttons. */
+.skip-link {
+  position: absolute; top: -60px; left: 12px; z-index: 6000;
+  padding: 10px 16px; border-radius: 0 0 12px 12px;
+  background: var(--accent); color: #fff; font-weight: 600; text-decoration: none;
+  transition: top .15s;
+}
+.skip-link:focus { top: 0; }
+
+/* A visible focus ring everywhere, on the app's own terms rather than the
+   browser default, which disappears against the dark background. */
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent2);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Feed cards and sound rows are buttons now, so the element defaults have to be
+   unwound before the card styling above reads correctly. */
+.card, .sp-row, .splash-skip {
+  appearance: none; font: inherit; color: inherit; text-align: left;
+  width: 100%; display: block; border: 0; background: none;
+}
+.card { border: 1px solid var(--stroke); background: #14141c; }
+.sp-row { border: 0; }
+.card-artist, .card-meta, .sp-info .a, .sp-info .o { display: block; }
+.card-foot { display: flex; }
+.sp-info { display: block; }
+.splash-skip {
+  width: auto; margin: 14px auto 0; text-align: center;
+  font-size: 12px; color: var(--muted); cursor: pointer; text-decoration: underline;
+}
+
+/* Empty and failed states, so the app always says something. */
+.feed-empty { padding: 18px 4px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.fatal {
+  position: fixed; inset: 0 0 auto 0; z-index: 6000; margin: 0;
+  padding: 16px 20px; background: var(--accent); color: #fff; font-weight: 600;
+}
+
+/* While a dialog is open the page behind it must not scroll away under it. */
+body.dialog-open { overflow: hidden; }
+
+/* Movement is the whole mood of this app, and for some people it is a reason to
+   close the tab. Honour the system preference: state changes still happen, they
+   just stop animating. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .splash-bg, .splash-spark, .pin-ring, .sp-pin .glow { animation: none !important; }
+}
+
+/* Windows high contrast mode strips background images and custom colours, so
+   give the interactive surfaces a border that survives it. */
+@media (forced-colors: active) {
+  .card, .chip, .fab, .sp-row, .modal-card, .sheet-card { border: 1px solid CanvasText; }
+}
+
+/* The OpenStreetMap fallback basemap is a light map, so it is darkened in the
+   browser to keep the pins readable when the primary tiles are unavailable. */
+.tiles-darkened { filter: invert(1) hue-rotate(180deg) brightness(.86) contrast(1.08) saturate(.7); }
