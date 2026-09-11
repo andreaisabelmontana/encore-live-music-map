@@ -59,6 +59,13 @@ export function createMomentDialog(options) {
     if (!current) return;
     current.likes += 1;
     countEl.textContent = formatCount(current.likes);
+
+    // Restart the animation on every press rather than only the first, which is
+    // what removing the class and forcing a reflow buys.
+    loveBtn.classList.remove("loved");
+    void loveBtn.offsetWidth;
+    loveBtn.classList.add("loved");
+
     options.onLove(current);
   });
 

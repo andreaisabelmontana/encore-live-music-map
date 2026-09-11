@@ -21,6 +21,7 @@ import { createMomentDialog } from "./ui/momentDialog.js";
 import { createPinForm } from "./ui/pinForm.js";
 import { createSoundPanel } from "./ui/soundPanel.js";
 import { createSplash } from "./ui/splash.js";
+import { createTicker } from "./ui/ticker.js";
 
 /**
  * @typedef {import("./core/types.js").Moment} Moment
@@ -90,6 +91,7 @@ async function boot() {
   );
 
   const chips = createGenreChips(element("genreFilters"), (genre) => state.set({ genre }));
+  const ticker = createTicker(element("ticker"));
   const searchInput = /** @type {HTMLInputElement} */ (element("searchInput"));
   createSearch(searchInput, (query) => state.set({ query }));
 
@@ -160,8 +162,10 @@ async function boot() {
    */
   function render(current) {
     const visible = filterMoments(current.moments, current);
+    const ranked = sortByLove(visible);
     chips.render(current.moments, current.genre);
-    feed.render(sortByLove(visible));
+    feed.render(ranked);
+    ticker.render(ranked);
     mapView.render(visible);
   }
 

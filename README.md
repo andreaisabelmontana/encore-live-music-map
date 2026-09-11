@@ -38,6 +38,21 @@ fan footage.
 |---|---|
 | ![A moment open, with its story and the route to fan footage](docs/screenshots/moment.png) | ![The sound map, artists placed at their city of origin](docs/screenshots/soundmap.png) |
 
+## The look
+
+A gig poster stapled to a wall, not app chrome. Two accents on near black, hard
+offset shadows instead of soft ones, halftone over the artwork, and condensed
+display type doing the work a gradient used to do. Cards hang a degree off
+square with tape over the corner and straighten when you reach for them.
+
+Most moments have no clip, so most cards have no photograph. Rather than repeat
+one placeholder down the rail, every moment prints its own poster from its own
+name: four compositions, five palettes, a halftone at an angle. The same act
+always gets the same poster.
+
+[docs/DESIGN.md](docs/DESIGN.md) has the rules, the type system, what each
+animation is for, and what the look is not allowed to cost.
+
 ## How it is built
 
 The app is plain ES modules with no bundler, no framework and no runtime
@@ -56,6 +71,7 @@ src/
     storage.js     local storage that cannot throw
     state.js       a small observable store, plus debounce
     bundle.js      the columnar wire format for the ingested dataset
+    poster.js      generated poster artwork, deterministic per moment
     format.js      escaping and display formatting
   ui/              views, each one unaware of the others
     mapView.js     tiles, pins, clustering, and their fallbacks
@@ -64,26 +80,28 @@ src/
     dialog.js      focus trap, Escape, focus restore, shared by all three overlays
     thumbnail.js   posters that always render
     motion.js      one place that honours prefers-reduced-motion
+    ticker.js      the run of dates along the bottom
 scripts/ingest/    the build time data pipeline
     http.mjs       rate limited, retrying, disk cached HTTP client
     musicbrainz.mjs  the three paged reads
     normalize.mjs  a MusicBrainz event into a moment, or a counted reject
     run.mjs        the orchestrator, with a report at the end
 data/              curated moments, the ingested dataset, the listening sample
-test/              96 unit tests on the Node test runner
+test/              112 unit tests on the Node test runner
 ```
 
 State lives in one observable store. A handler describes a change, subscribers
-redraw. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the data flow, and
-[docs/DECISIONS.md](docs/DECISIONS.md) for why the map has no API key, why the
-video is embedded rather than hosted, and why there is no build step.
+redraw. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the data flow,
+[docs/DECISIONS.md](docs/DECISIONS.md) for why the map has no API key and why
+there is no build step, and [docs/DESIGN.md](docs/DESIGN.md) for the visual
+system.
 
 ## Engineering notes
 
 If you are reviewing the code, these are the parts worth a look.
 
 - **Tested rules.** Every decision the app makes lives in `src/core/` and is
-  covered by 96 tests that run in about a second on the Node test runner, with no
+  covered by 112 tests that run in about a second on the Node test runner, with no
   test framework installed. `test/share.test.js` and `test/normalize.test.js` are
   the interesting ones: the first packs a moment into a link and refuses tampered
   ones, the second feeds the pipeline the shapes real archive data actually

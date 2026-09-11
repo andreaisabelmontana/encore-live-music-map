@@ -46,6 +46,10 @@ export function createFeed(elements, onSelect) {
 }
 
 /**
+ * A card is a small poster: the photograph flattened to two tones, the artist
+ * name set across the bottom of it, a strip of tape holding the top, and the
+ * details printed underneath like a caption.
+ *
  * @param {Moment} moment
  * @param {(moment: Moment) => void} onSelect
  * @returns {HTMLButtonElement}
@@ -55,17 +59,27 @@ function card(moment, onSelect) {
   button.type = "button";
   button.className = "card";
 
+  const poster = document.createElement("span");
+  poster.className = "card-poster";
+
+  const tape = document.createElement("span");
+  tape.className = "card-tape";
+  tape.setAttribute("aria-hidden", "true");
+
   const play = document.createElement("span");
   play.className = "card-play";
   play.setAttribute("aria-hidden", "true");
   play.textContent = "▶";
 
-  const body = document.createElement("div");
-  body.className = "card-body";
-
+  // The name is the artwork, so it sits on the poster rather than under it.
   const artist = document.createElement("span");
   artist.className = "card-artist";
   artist.textContent = moment.artist;
+
+  poster.append(createPoster(moment, "card-thumb"), tape, play, artist);
+
+  const body = document.createElement("span");
+  body.className = "card-body";
 
   const meta = document.createElement("span");
   meta.className = "card-meta";
@@ -83,8 +97,8 @@ function card(moment, onSelect) {
   likes.textContent = `♥ ${formatCount(moment.likes)}`;
 
   foot.append(genre, likes);
-  body.append(artist, meta, foot);
-  button.append(play, createPoster(moment, "card-thumb"), body);
+  body.append(meta, foot);
+  button.append(poster, body);
 
   button.addEventListener("click", () => onSelect(moment));
   return button;

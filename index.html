@@ -44,7 +44,11 @@
           integrity="sha384-eXVCORTRlv4FUUgS/xmOyr66XBVraen8ATNLMESp92FKXLAMiKkerixTiBvXriZr"
           crossorigin="anonymous"></script>
 
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Archivo+Black&display=swap" rel="stylesheet" />
+  <!--
+    Three faces, each with a job. Anton is the poster type, set huge and flat.
+    Space Grotesk runs the interface. Caveat is the handwriting in the margin.
+  -->
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&family=Caveat:wght@500;600&family=Archivo+Black&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 
   <script type="module" src="src/main.js"></script>
@@ -127,6 +131,9 @@
       <p class="sp-demo-note">prototype: this loads a sample listening profile. the real version needs Spotify OAuth plus MusicBrainz origins.</p>
     </div>
   </div>
+
+  <!-- A strip of dates along the bottom, the way a poster lists a tour. -->
+  <div class="ticker" id="ticker" aria-hidden="true"></div>
 
   <button class="feed-toggle" id="feedToggle" type="button" aria-controls="feed" aria-expanded="false">▤ feed</button>
 
